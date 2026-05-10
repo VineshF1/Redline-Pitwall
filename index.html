@@ -728,13 +728,40 @@ body::after {
   grid-template-columns: 1.1fr 1fr 1fr;
   border: 2px solid var(--ink);
   background: var(--paper);
+  height: 700px;
 }
 .col {
   border-right: 1px solid var(--rule-light);
   display: flex;
   flex-direction: column;
+  height: 100%;
+  overflow: hidden;
 }
 .col:last-child { border-right: none; }
+
+/* All column containers - use full height */
+#driversContainer,
+#constructorsContainer,
+#resultsContainer {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+/* Scrollable columns - all three */
+#driversContainer,
+#constructorsContainer,
+#resultsContainer {
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+#driversContainer::-webkit-scrollbar,
+#constructorsContainer::-webkit-scrollbar,
+#resultsContainer::-webkit-scrollbar {
+  display: none;
+}
 
 .col-head {
   padding: 22px 24px 20px;
@@ -962,6 +989,57 @@ body::after {
 .pod-time { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-2); font-weight: 500; }
 
 .news-block { padding: 0; }
+
+.results-grid {
+  padding: 16px 0;
+  height: 100%;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.results-grid::-webkit-scrollbar { display: none; }
+
+.result-row {
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  align-items: center;
+  padding: 10px 24px;
+  border-bottom: 1px solid var(--rule-light);
+  gap: 12px;
+}
+.result-row:hover { background: var(--paper-2); }
+.result-row.p1 { background: linear-gradient(90deg, rgba(212,160,23,0.12), transparent); }
+.result-row.p2 { background: linear-gradient(90deg, rgba(160,160,160,0.08), transparent); }
+.result-row.p3 { background: linear-gradient(90deg, rgba(176,108,48,0.08), transparent); }
+
+.result-pos {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink-2);
+}
+.result-p1 .result-pos { color: var(--gold); }
+.result-p2 .result-pos { color: #a0a0a0; }
+.result-p3 .result-pos { color: #b06c30; }
+
+.result-info { display: flex; flex-direction: column; gap: 2px; }
+.result-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+}
+.result-team {
+  font-size: 11px;
+  color: var(--ink-3);
+}
+.result-time {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--ink-2);
+  font-weight: 500;
+  text-align: right;
+}
 .news-item {
   padding: 16px 24px;
   border-bottom: 1px solid var(--rule-light);
@@ -1010,13 +1088,13 @@ body::after {
 .stat-sub { font-family: 'Inter', sans-serif; font-size: 12px; color: rgba(255,255,255,0.58); font-weight: 400; }
 
 .footer-wrap { max-width: 1440px; margin: 0 auto; padding: 32px 36px 40px; }
-.footer { border-top: 1px solid var(--ink); padding-top: 22px; display: flex; justify-content: space-between; align-items: center; }
+.footer { border-top: 1px solid var(--ink); padding-top: 22px; display: flex; justify-content: space-between; align-items: center; position: relative; }
 .f-note { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--ink-3); letter-spacing: .18em; text-transform: uppercase; }
 .f-dot { display: inline-block; width: 4px; height: 4px; background: var(--racing); vertical-align: middle; margin: 0 8px; border-radius: 50%; position: relative; top: -2px; }
 .f-brand { font-family: 'Playfair Display', serif; font-size: 15px; font-style: italic; color: var(--ink-2); }
 .f-brand em { color: var(--racing); font-weight: 500; }
 
-.footer-links {
+.footer_links {
   display:flex;
   align-items:center;
   gap:18px;
@@ -1462,10 +1540,6 @@ body.colo-open { overflow: hidden; }
 </head>
 <body>
 
-<div class="ticker-wrap">
-  <div class="ticker-track" id="tkTrack"></div>
-</div>
-
 <section class="hero">
   <span class="speed-line"></span>
   <span class="speed-line"></span>
@@ -1554,19 +1628,12 @@ body.colo-open { overflow: hidden; }
 
     <div class="col">
       <div class="col-head">
-        <div class="col-name">Paddock <em>Intel</em></div>
-        <div class="col-sub">Last Race · Top Stories</div>
+        <div class="col-name">Race <em>Results</em></div>
+        <div class="col-sub">Full Grid · Last Race</div>
       </div>
 
-      <div class="podium-block">
-        <div class="podium-head">Japanese GP · Suzuka · Result</div>
-        <div class="podium-list" id="podiumContainer"></div>
-      </div>
-
-      <div class="news-block" id="newsContainer"></div>
-      
+      <div class="results-grid" id="resultsContainer"></div>
     </div>
-
   </div>
 </section>
 
@@ -1700,7 +1767,7 @@ async function loadDriverStandings() {
     standings.slice(0, 10).forEach(driver => {
 
       const team =
-        driver.Constructors[0].name;
+        getFullTeamName(driver.Constructors[0].name);
 
       const row = document.createElement("div");
 
@@ -1763,18 +1830,25 @@ async function loadDriverStandings() {
 
 loadDriverStandings();
 
-setInterval(loadDriverStandings, 60000);
+setInterval(loadDriverStandings, 120000);
 
-async function loadConstructors() {
+// Full team name mapping for 2025
+const teamFullNames = {
+  "Red Bull": "Oracle Red Bull Racing",
+  "Mercedes": "Mercedes-AMG PETRONAS Formula One Team",
+  "Ferrari": "Scuderia Ferrari HP",
+  "McLaren": "McLaren Formula 1 Team",
+  "Aston Martin": "Aston Martin Aramco Formula One Team",
+  "Alpine": "BWT Alpine Formula One Team",
+  "Haas": "TGR Haas F1 Team",
+  "RB": "Visa Cash App Racing Bulls Formula One Team",
+  "Stake": "Audi Revolut F1 Team",
+  "Williams": "Atlassian Williams Racing",
+  "Cadillac": "Cadillac Formula 1 Team"
+};
 
-  const res = await fetch(
-    'https://api.jolpi.ca/ergast/f1/current/constructorStandings.json'
-  );
-
-  const data = await res.json();
-
-  console.log(data);
-
+function getFullTeamName(shortName) {
+  return teamFullNames[shortName] || shortName;
 }
 
 async function loadConstructors() {
@@ -1815,11 +1889,7 @@ async function loadConstructors() {
           <div>
 
             <div class="con-name">
-              ${team.Constructor.name}
-            </div>
-
-            <div class="con-engine">
-              Formula 1 Constructor
+              ${getFullTeamName(team.Constructor.name)}
             </div>
 
           </div>
@@ -1849,7 +1919,7 @@ async function loadConstructors() {
 
 loadConstructors();
 
-setInterval(loadConstructors, 60000);
+setInterval(loadConstructors, 120000);
 
 async function loadTelemetry() {
 
@@ -1871,7 +1941,8 @@ async function loadTelemetry() {
 
 loadTelemetry();
 
-setInterval(loadTelemetry, 1000);
+// Rate limit: every 30 seconds instead of every second
+setInterval(loadTelemetry, 30000);
 
 async function loadNextRace() {
 
@@ -1882,6 +1953,12 @@ async function loadNextRace() {
     );
 
     const data = await response.json();
+
+    const race =
+      data.MRData
+          .RaceTable
+          .Races[0];
+
     const info =
         circuitInfo[race.raceName];
 
@@ -1903,10 +1980,6 @@ async function loadNextRace() {
         info.firstGP;
 
     }
-    const race =
-      data.MRData
-          .RaceTable
-          .Races[0];
 
     const raceDate =
       new Date(
@@ -1981,294 +2054,6 @@ async function loadNextRace() {
 }
 
 loadNextRace();
-
-const NEWS_CACHE_KEY = "f1_news_cache";
-const NEWS_CACHE_TIME_KEY = "f1_news_cache_time";
-
-/*
-  15 MIN CACHE
-  prevents unnecessary API calls
-*/
-const CACHE_DURATION = 15 * 60 * 1000;
-
-async function loadF1News(forceRefresh = false) {
-
-  try {
-
-    const container =
-      document.getElementById("newsContainer");
-
-    /*
-      LOADING STATE
-    */
-    container.innerHTML = `
-      <div class="news-item">
-        <h3 class="news-headline">
-          Loading latest paddock intel...
-        </h3>
-      </div>
-    `;
-
-    /*
-      CHECK CACHE FIRST
-    */
-    const cachedNews =
-      localStorage.getItem(NEWS_CACHE_KEY);
-
-    const cachedTime =
-      localStorage.getItem(NEWS_CACHE_TIME_KEY);
-
-    const now = Date.now();
-
-    /*
-      USE CACHE IF STILL VALID
-    */
-    if (
-      !forceRefresh &&
-      cachedNews &&
-      cachedTime &&
-      now - Number(cachedTime) < CACHE_DURATION
-    ) {
-
-      renderNews(
-        JSON.parse(cachedNews)
-      );
-
-      console.log(
-        "Loaded F1 news from cache"
-      );
-
-      return;
-
-    }
-
-    /*
-      YOUR API KEY
-    */
-    const API_KEY = "pub_fc194fb8b9ee469a869255f01c253f81";
-
-    /*
-      API FETCH
-    */
-    const response = await fetch(
-     `https://newsdata.io/api/1/news?apikey=${API_KEY}&q=Formula%201%20OR%20F1%20OR%20Max%20Verstappen&language=en&category=sports&domain=formula1.com,motorsport.com,the-race.com,racefans.net,autosport.com`
-    );
-
-    /*
-      RATE LIMIT CHECK
-    */
-    if (response.status === 429) {
-
-      console.warn(
-        "Rate limit reached"
-      );
-
-      if (cachedNews) {
-
-        renderNews(
-          JSON.parse(cachedNews)
-        );
-
-      }
-
-      return;
-
-    }
-
-    /*
-      FAILED REQUEST
-    */
-    if (!response.ok) {
-
-      throw new Error(
-        "Failed to fetch news"
-      );
-
-    }
-
-    const data = await response.json();
-
-    /*
-      VALIDATE DATA
-    */
-    if (!data.results || !data.results.length) {
-
-      throw new Error(
-        "No news found"
-      );
-
-    }
-
-    /*
-      REMOVE DUPLICATES
-    */
-    const uniqueNews = [];
-
-    const titles = new Set();
-
-    data.results.forEach(article => {
-
-      if (
-        article.title &&
-        !titles.has(article.title)
-      ) {
-
-        titles.add(article.title);
-
-        uniqueNews.push(article);
-
-      }
-
-    });
-
-    /*
-      SAVE CACHE
-    */
-    localStorage.setItem(
-      NEWS_CACHE_KEY,
-      JSON.stringify(uniqueNews)
-    );
-
-    localStorage.setItem(
-      NEWS_CACHE_TIME_KEY,
-      now.toString()
-    );
-
-    /*
-      RENDER NEWS
-    */
-    renderNews(uniqueNews);
-
-    console.log(
-      "Live F1 news loaded"
-    );
-
-  } catch(error) {
-
-    console.error(
-      "F1 news failed:",
-      error
-    );
-
-    showFallbackNews();
-
-  }
-
-}
-
-/*
-  RENDER FUNCTION
-*/
-function renderNews(newsData) {
-
-  const container =
-    document.getElementById("newsContainer");
-
-  container.innerHTML = "";
-
-  newsData
-    .slice(0, 4)
-    .forEach((news, index) => {
-
-      const item =
-        document.createElement("article");
-
-      item.className = "news-item";
-
-      item.innerHTML = `
-
-        <div class="news-meta">
-
-          <span class="news-kicker">
-            PADDOCK
-          </span>
-
-          <span class="news-num">
-            0${index + 1}
-          </span>
-
-        </div>
-
-        <h3 class="news-headline">
-
-          <a href="${news.link}"
-             target="_blank"
-             style="
-               color:inherit;
-               text-decoration:none;
-             ">
-
-            ${news.title}
-
-          </a>
-
-        </h3>
-
-        <p class="news-body">
-
-          ${news.description || "Latest Formula 1 update"}
-
-        </p>
-
-      `;
-
-      container.appendChild(item);
-
-    });
-
-}
-
-/*
-  FALLBACK CONTENT
-*/
-function showFallbackNews() {
-
-  const container =
-    document.getElementById("newsContainer");
-
-  container.innerHTML = `
-
-    <article class="news-item">
-
-      <div class="news-meta">
-
-        <span class="news-kicker">
-          OFFLINE
-        </span>
-
-      </div>
-
-      <h3 class="news-headline">
-
-        Unable to load live F1 news
-
-      </h3>
-
-      <p class="news-body">
-
-        API limit reached or network issue.
-
-      </p>
-
-    </article>
-
-  `;
-
-}
-
-/*
-  INITIAL LOAD
-*/
-loadF1News();
-
-/*
-  REFRESH EVERY 15 MINUTES
-*/
-setInterval(() => {
-
-  loadF1News(true);
-
-}, CACHE_DURATION);
 
 async function loadLastRaceResults() {
 
@@ -2365,58 +2150,49 @@ async function loadLastRaceResults() {
 
 loadLastRaceResults();
 
-async function loadTickerNews() {
-
+// Load last race results with points for Paddock section
+async function loadFullRaceResults() {
   try {
-
-    const API_KEY = "pub_fc194fb8b9ee469a869255f01c253f81";
-
-    const response = await fetch(
-
-      `https://newsdata.io/api/1/news?apikey=${API_KEY}&q=Formula%201&language=en&category=sports`
-
-    );
-
+    const response = await fetch("https://api.jolpi.ca/ergast/f1/current/last/results.json");
     const data = await response.json();
+    const race = data.MRData.RaceTable.Races[0];
+    const results = race.Results;
 
-    const track =
-      document.getElementById("tkTrack");
+    const container = document.getElementById("resultsContainer");
+    container.innerHTML = "";
 
-    track.innerHTML = "";
+    results.forEach((driver) => {
+      const pos = parseInt(driver.position);
+      const posClass = pos <= 3 ? `p${pos}` : '';
 
-    data.results.slice(0,8).forEach(news => {
-
-      track.innerHTML += `
-
-        <span class="tick">
-
-          <span class="sym">
-            F1
-          </span>
-
-          <span class="val">
-            ${news.title}
-          </span>
-
-        </span>
-
-        <span class="tick tick-dot">
-          ◆
-        </span>
-
+      const row = document.createElement("div");
+      row.className = `result-row ${posClass}`;
+      row.innerHTML = `
+        <div class="result-pos">${pos}</div>
+        <div class="result-info">
+          <div class="result-name">${driver.Driver.givenName} ${driver.Driver.familyName}</div>
+          <div class="result-team">${getFullTeamName(driver.Constructor.name)}</div>
+        </div>
+        <div class="result-time">${driver.points} pts</div>
       `;
-
+      container.appendChild(row);
     });
 
-  } catch(error) {
+    const colHead = document.querySelector(".col:nth-child(3) .col-sub");
+    if (colHead) {
+      colHead.textContent = `${race.raceName.replace(" Grand Prix", "")} Points`;
+    }
 
-    console.error(error);
-
+  } catch (error) {
+    console.error("Ergast API error:", error);
+    const container = document.getElementById("resultsContainer");
+    if (container) {
+      container.innerHTML = '<div style="padding:20px;color:var(--ink-3);text-align:center;">Unable to load race data</div>';
+    }
   }
-
 }
 
-loadTickerNews();
+loadFullRaceResults();
 
 const circuitInfo = {
 
@@ -2542,162 +2318,6 @@ async function updateRaceHero() {
 }
 
 updateRaceHero();
-
-async function updateNews() {
-
-  try {
-
-    const API_KEY =
-      "YOUR_API_KEY";
-
-    const response = await fetch(
-
-`https://newsdata.io/api/1/news?apikey=${API_KEY}&q=Formula%201&language=en&category=sports&domain=formula1.com,motorsport.com,autosport.com,the-race.com`
-
-    );
-
-    const data =
-      await response.json();
-
-    const container =
-      document.getElementById("newsContainer");
-
-    container.innerHTML = "";
-
-    data.results
-      .slice(0,4)
-      .forEach((news,index)=>{
-
-      container.innerHTML += `
-
-        <article class="news-item ${index===0 ? "lead" : ""}">
-
-          <div class="news-meta">
-
-            <span class="news-kicker">
-              PADDOCK
-            </span>
-
-            <span class="news-num">
-              0${index+1}
-            </span>
-
-          </div>
-
-          <h3 class="news-headline">
-
-            ${news.title}
-
-          </h3>
-
-          <p class="news-body">
-
-            ${news.description || ""}
-
-          </p>
-
-        </article>
-
-      `;
-
-    });
-
-  }
-
-  catch(err) {
-
-    console.error(err);
-
-  }
-
-}
-
-updateNews();
-
-async function updatePodium() {
-
-  try {
-
-    const response = await fetch(
-      "https://api.jolpi.ca/ergast/f1/current/last/results.json"
-    );
-
-    const data =
-      await response.json();
-
-    const race =
-      data.MRData
-          .RaceTable
-          .Races[0];
-
-    document.querySelector(".podium-head")
-      .textContent =
-      `${race.raceName} · Result`;
-
-    const container =
-      document.getElementById("podiumContainer");
-
-    container.innerHTML = "";
-
-    race.Results
-      .slice(0,3)
-      .forEach((driver,index)=>{
-
-      container.innerHTML += `
-
-        <div class="pod-row p${index+1}">
-
-          <div class="pod-badge">
-            P${index+1}
-          </div>
-
-          <div>
-
-            <div class="pod-driver-name">
-
-              ${driver.Driver.givenName}
-              ${driver.Driver.familyName}
-
-            </div>
-
-            <div class="pod-driver-team">
-
-              ${driver.Constructor.name}
-
-            </div>
-
-          </div>
-
-          <div class="pod-time">
-
-            ${
-              index===0
-              ? driver.Time?.time || "Winner"
-              : "+" + (
-                driver.Time?.time || "Gap"
-              )
-            }
-
-          </div>
-
-        </div>
-
-      `;
-
-    });
-
-  }
-
-  catch(err) {
-
-    console.error(err);
-
-  }
-
-}
-
-updatePodium();
-
 
 
 async function loadCalendar() {
@@ -2880,7 +2500,7 @@ async function loadCalendar() {
         </div>
 
         <div class="cal-flag-name">
-          ${race.raceName.replace("Grand Prix","")}
+          ${race.raceName}
         </div>
 
         <div class="cal-date">
@@ -2917,45 +2537,107 @@ async function loadCalendar() {
 
 loadCalendar();
 
-const NEWS_API_KEY = "0ce4dd7e17304c3890ecd91401c6d4c5";
+// Rate limiting: cache news for 10 minutes
+const NEWS_CACHE_KEY = "f1_news_cache_v2";
+const NEWS_CACHE_TIME_KEY = "f1_news_cache_time_v2";
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+
 async function fetchF1News() {
+
+  console.log(">>> Starting F1 news fetch...");
 
   try {
 
-    const response = await fetch(
+    console.log("=== FETCHING FRESH NEWS ===");
 
-`https://newsapi.org/v2/everything?q=Formula%201&language=en&sortBy=publishedAt&pageSize=20&domains=formula1.com,motorsport.com,autosport.com,racingnews365.com,planetf1.com,the-race.com&apiKey=${NEWS_API_KEY}`
+    // Use RSS2JSON - prioritize getting real articles
+    // Only using: f1today.net, planetf1.com, skysports.com/f1, formula1.com
+    const rssUrls = [
+      { url: "https://www.formula1.com/content/rss-feed.xml", name: "F1.com" },
+      { url: "https://www.skysports.com/rss/12040/f1-news", name: "Sky Sports" },
+      { url: "https://www.planetf1.com/feed/", name: "PlanetF1" },
+      { url: "https://www.f1today.net/rss/en/news", name: "F1Today" }
+    ];
 
-    );
+    let allArticles = [];
+    let sourcesFound = [];
 
-    const data = await response.json();
+    console.log("Trying RSS sources via corsproxy...");
 
-    if (!data.articles) return [];
+    // Try different proxies
+    const proxies = [
+      url => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
+      url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+    ];
 
-    return data.articles.filter(article => {
+    // Collect from ALL sources and combine
+    for (const source of rssUrls) {
+      try {
+        // Try first proxy
+        let proxyUrl = proxies[0](source.url);
+        console.log("Fetching from:", source.name);
+        let response = await fetch(proxyUrl);
 
-      const text = (
-        (article.title || "") + " " +
-        (article.description || "")
-      ).toLowerCase();
+        if (!response.ok) {
+          // Try second proxy
+          console.log("First proxy failed, trying second...");
+          proxyUrl = proxies[1](source.url);
+          response = await fetch(proxyUrl);
+        }
 
-      return (
-        text.includes("formula 1") ||
-        text.includes("f1") ||
-        text.includes("grand prix") ||
-        text.includes("verstappen") ||
-        text.includes("hamilton") ||
-        text.includes("leclerc") ||
-        text.includes("norris") ||
-        text.includes("piastri") ||
-        text.includes("fia") ||
-        text.includes("red bull") ||
-        text.includes("ferrari") ||
-        text.includes("mclaren") ||
-        text.includes("mercedes")
-      );
+        if (!response.ok) continue;
 
+        const data = await response.json();
+
+        if (data.contents) {
+          // Parse XML manually
+          const parser = new DOMParser();
+          const xmlDoc = parser.parseFromString(data.contents, "text/xml");
+          const items = xmlDoc.querySelectorAll("item");
+
+          if (items.length > 0) {
+            const parsedItems = Array.from(items).slice(0, 5).map(item => ({
+              title: item.querySelector("title")?.textContent || "",
+              description: item.querySelector("description")?.textContent?.replace(/<[^>]*>/g, '').substring(0, 150) || "",
+              link: item.querySelector("link")?.textContent || "",
+              source: source.name
+            }));
+            allArticles.push(...parsedItems);
+            sourcesFound.push(source.name);
+            console.log(`Loaded ${parsedItems.length} from ${source.name}`);
+          }
+        }
+      } catch (e) {
+        console.log("Failed:", source.name, e.message);
+        continue;
+      }
+    }
+
+    // Remove duplicates by title
+    const seen = new Set();
+    const articles = allArticles.filter(article => {
+      const key = article.title.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
     });
+
+    console.log("Sources used:", sourcesFound.join(", "));
+
+    // If no articles from RSS, use sample news
+    if (articles.length === 0) {
+      console.log("Using sample F1 news (RSS unavailable)");
+      articles = []; // Show error message instead of fake news
+    }
+
+    // Cache disabled for testing
+    // localStorage.setItem(NEWS_CACHE_KEY, JSON.stringify(articles));
+    // localStorage.setItem(NEWS_CACHE_TIME_KEY, Date.now().toString());
+
+    console.log("F1 news loaded:", articles.length, "articles");
+
+    return articles;
 
   }
 
@@ -2963,7 +2645,8 @@ async function fetchF1News() {
 
     console.error("F1 NEWS ERROR:", err);
 
-    return [];
+    // Return sample news as fallback
+    return []; // Show error message instead of fake news
 
   }
 
@@ -2971,7 +2654,9 @@ async function fetchF1News() {
 
 async function loadTicker() {
 
+  // Fetch from RSS feeds
   const articles = await fetchF1News();
+  console.log("Ticker loaded:", articles.length);
 
   const track = document.getElementById("tkTrack");
 
@@ -2980,6 +2665,21 @@ async function loadTicker() {
   track.innerHTML = "";
 
   const valid = articles.slice(0, 8);
+
+  // Fallback ticker if no articles
+  if (valid.length === 0) {
+
+    track.innerHTML = `
+
+      <span class="tick"><span class="sym">F1</span><span class="val">Loading latest headlines...</span></span>
+
+      <span class="tick tick-dot">◆</span>
+
+    `;
+
+    return;
+
+  }
 
   valid.forEach(article => {
 
@@ -3007,7 +2707,9 @@ async function loadTicker() {
 
 async function loadPaddockNews() {
 
+  // Fetch from RSS feeds
   const articles = await fetchF1News();
+  console.log("Paddock loaded:", articles.map(a => a.source));
 
   const container =
     document.getElementById("newsContainer");
@@ -3016,7 +2718,44 @@ async function loadPaddockNews() {
 
   container.innerHTML = "";
 
-  articles.slice(0,4).forEach((news,index)=>{
+  // Fallback if no articles
+  if (!articles || articles.length === 0) {
+
+    container.innerHTML = `
+
+      <article class="news-item">
+
+        <div class="news-meta">
+
+          <span class="news-kicker">
+            PADDOCK
+          </span>
+
+          <span class="news-num">
+            01
+          </span>
+
+        </div>
+
+        <h3 class="news-headline">
+          Unable to load latest news
+        </h3>
+
+        <p class="news-body">
+          RSS feeds from F1.com, Sky Sports, PlanetF1 & F1Today may be unavailable. Please try again later.
+        </p>
+
+      </article>
+
+    `;
+
+    console.warn("No news fetched - RSS feeds unavailable");
+
+    return;
+
+  }
+
+  articles.slice(0,5).forEach((news,index)=>{
 
     const item =
       document.createElement("article");
@@ -3028,7 +2767,7 @@ async function loadPaddockNews() {
       <div class="news-meta">
 
         <span class="news-kicker">
-          PADDOCK
+          ${news.source || "PADDOCK"}
         </span>
 
         <span class="news-num">
@@ -3037,7 +2776,7 @@ async function loadPaddockNews() {
 
       </div>
 
-      <h3 class="news-headline">
+      <h3 class="news-headline" ${news.link ? `onclick="window.open('${news.link}', '_blank')" style="cursor:pointer;"` : ''}>
         ${news.title}
       </h3>
 
@@ -3055,17 +2794,11 @@ async function loadPaddockNews() {
 
 document.addEventListener("DOMContentLoaded", () => {
 
-  loadTicker();
-
-  loadPaddockNews();
-
+  // Race results already loaded at script execution
+  // Refresh race results every 2 minutes
   setInterval(() => {
-
-    loadTicker();
-
-    loadPaddockNews();
-
-  }, 300000);
+    loadFullRaceResults();
+  }, 120000);
 
 });
 
