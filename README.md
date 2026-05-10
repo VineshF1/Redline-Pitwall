@@ -1,55 +1,28 @@
-# Redline-Pitwall
+# F1 Dashboard - My Personal Pit Wall
 
-A personal Formula 1 dashboard I built around the way I actually follow race weekends.
+I've been building this dashboard to keep track of everything F1 - race results, standings, calendar, and news - all in one place. It pulls data from the Ergast API (the go-to free F1 data source) and displays it in a clean, grid-based layout.
 
-I wanted something that felt closer to a real pit wall screen instead of another generic sports dashboard, so this project mixes live F1 data, paddock news, race countdowns, standings, and a motorsport-inspired UI into a single-file experience.
+## What's On The Dashboard
 
-The design is heavily inspired by Oracle Red Bull Racing aesthetics:
+The main section shows upcoming race countdown with the circuit name and date. Below that, there are three columns:
+- Driver standings showing top 10 with their team and points
+- Constructor standings with all 10 teams
+- Race points from the last race
 
-* deep navy tones
-* matte carbon textures
-* electric blue highlights
-* aggressive dark UI
-* broadcast-style layouts
+The calendar section has all the races for the season with dates and venue details. There's also a news section that pulls in F1 articles.
 
-Everything runs directly in the browser with live API feeds — no backend.
+## How It Works
 
----
+Just open index.html in any browser. The page automatically fetches data from:
+- Ergast API for standings and race results
+- OpenF1 for live timing during races
 
-## What's Inside
+Driver and constructor data refresh every couple of minutes to keep things current.
 
-* Live Driver Standings
-* Constructor Championship Table
-* Real-time Paddock Intel
-* Scrolling F1 Headlines Ticker
-* Dynamic Stats Ribbon
-* Next Race Countdown
-* Updated Season Calendar
-* Previous Race Results
-* Circuit Information
-* Responsive Layout
-* Glassmorphism + motion effects
+## Customizing Team Names
 
----
+I mapped the short team names to their full 2025 branding. If you want to change them, look for the `teamFullNames` section in the JavaScript - you can update the mapping there.
 
-## APIs Used
+## Tech Stuff
 
-### Jolpica F1 API
-
-Used for:
-
-* standings
-* race schedule
-* race results
-* countdown timing
-
-https://api.jolpi.ca/ergast/
-
----
-
-
-## Disclaimer
-
-This is an unofficial fan project and is not affiliated with Formula 1, FIA, Oracle Red Bull Racing, or any Formula 1 team.
-
----
+It's all vanilla HTML, CSS, and JavaScript. No frameworks, just straightforward front-end work. The API calls are standard fetch requests that run on page load and on timers.
